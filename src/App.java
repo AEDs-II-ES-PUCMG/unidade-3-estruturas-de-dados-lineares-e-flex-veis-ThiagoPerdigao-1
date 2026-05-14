@@ -1,4 +1,6 @@
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.Scanner;
 import java.io.File;
@@ -19,8 +21,11 @@ public class App {
     /** Quantidade de produtos cadastrados atualmente no vetor */
     static int quantosProdutos = 0;
 
-    /** Pilha de pedidos */
-    static Pilha<Pedido> pilhaPedidos = new Pilha<>();
+    /** Fila de pedidos */
+    static Fila<Pedido> filaPedidos = new Fila<>();
+
+    /** Pilha de produtos mais recentemente incluidos em pedidos */
+    static Pilha<Produto> pilhaProdutosRecentes = new Pilha<>();
         
     static void limparTela() {
         System.out.print("\033[H\033[2J");
@@ -127,7 +132,7 @@ public class App {
         
         return produto;   
     }
-    
+
     /** Localiza um produto no vetor de produtos cadastrados, a partir do nome de produto informado pelo usuário, e o retorna. 
      *  A busca não é sensível ao caso. Em caso de não encontrar o produto, retorna null
      *  @return O produto encontrado ou null, caso o produto não tenha sido localizado no vetor de produtos cadastrados.
@@ -208,14 +213,62 @@ public class App {
      */
     public static void finalizarPedido(Pedido pedido) {
     	
-    	// TODO
+    	if (pedido == null) {
+    		System.out.println("Nenhum pedido foi iniciado.");
+    		return;
+    	}
+    	
+    	registrarPedidoFinalizado(pedido);
+    	
+    	System.out.println("Pedido finalizado com sucesso.");
+    	System.out.println(pedido);
+    }
+
+    public static void registrarPedidoFinalizado(Pedido pedido) {
+    	
+    	filaPedidos.enfileirar(pedido);
+    	
+    	Produto[] produtosPedido = pedido.getProdutos();
+    	for (int i = 0; i < pedido.getQuantosProdutos(); i++) {
+    		pilhaProdutosRecentes.empilhar(produtosPedido[i]);
+    	}
     }
     
     public static void listarProdutosPedidosRecentes() {
     	
-    	// TODO
+    	cabecalho();
+    	
+    	if (pilhaProdutosRecentes.vazia()) {
+    		System.out.println("Ainda nao ha produtos associados a pedidos finalizados.");
+    		return;
+    	}
+    	
+    	int quantidade = lerOpcao("Quantos produtos recentes deseja visualizar?", Integer.class);
+    	
+    	try {
+    		Pilha<Produto> produtosRecentes = pilhaProdutosRecentes.subPilha(quantidade);
+    		System.out.println("Produtos mais recentemente pedidos:");
+    		System.out.println(produtosRecentes);
+    	} catch (IllegalArgumentException excecao) {
+    		System.out.println(excecao.getMessage());
+    	}
     }
-    
+
+    public static void salvarPedidos() {
+    	
+    	if (filaPedidos.vazia()) {
+    		System.out.println("Nenhum pedido finalizado para salvar.");
+    		return;
+    	}
+    	
+    	try {
+    		Files.writeString(Path.of("pedidos.txt"), filaPedidos.toString(), Charset.forName("UTF-8"));
+    		System.out.println("Pedidos salvos em pedidos.txt.");
+    	} catch (IOException excecao) {
+    		System.out.println("Nao foi possivel salvar os pedidos em arquivo.");
+    	}
+    }
+
 	public static void main(String[] args) {
 		
 		teclado = new Scanner(System.in, Charset.forName("UTF-8"));
@@ -234,11 +287,16 @@ public class App {
                 case 2 -> mostrarProduto(localizarProduto());
                 case 3 -> mostrarProduto(localizarProdutoDescricao());
                 case 4 -> pedido = iniciarPedido();
-                case 5 -> finalizarPedido(pedido);
+                case 5 -> {
+                	finalizarPedido(pedido);
+                	pedido = null;
+                }
                 case 6 -> listarProdutosPedidosRecentes();
             }
             pausa();
         }while(opcao != 0);       
+
+        salvarPedidos();
 
         teclado.close();    
     }
