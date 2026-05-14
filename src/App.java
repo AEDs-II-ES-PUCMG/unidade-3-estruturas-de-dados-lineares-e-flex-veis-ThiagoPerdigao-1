@@ -24,9 +24,6 @@ public class App {
     /** Fila de pedidos */
     static Fila<Pedido> filaPedidos = new Fila<>();
 
-    /** Pilha de produtos mais recentemente incluidos em pedidos */
-    static Pilha<Produto> pilhaProdutosRecentes = new Pilha<>();
-        
     static void limparTela() {
         System.out.print("\033[H\033[2J");
         System.out.flush();
@@ -68,7 +65,7 @@ public class App {
         System.out.println("3 - Procurar por um produto, por nome");
         System.out.println("4 - Iniciar novo pedido");
         System.out.println("5 - Fechar pedido");
-        System.out.println("6 - Listar produtos dos pedidos mais recentes");
+        System.out.println("6 - Extrair lote de pedidos da fila");
         System.out.println("0 - Sair");
         System.out.print("Digite sua opção: ");
         return Integer.parseInt(teclado.nextLine());
@@ -208,7 +205,7 @@ public class App {
     }
     
     /**
-     * Finaliza um pedido, momento no qual ele deve ser armazenado em uma pilha de pedidos.
+     * Finaliza um pedido, momento no qual ele deve ser armazenado em uma fila de pedidos.
      * @param pedido O pedido que deve ser finalizado.
      */
     public static void finalizarPedido(Pedido pedido) {
@@ -227,31 +224,28 @@ public class App {
     public static void registrarPedidoFinalizado(Pedido pedido) {
     	
     	filaPedidos.enfileirar(pedido);
-    	
-    	Produto[] produtosPedido = pedido.getProdutos();
-    	for (int i = 0; i < pedido.getQuantosProdutos(); i++) {
-    		pilhaProdutosRecentes.empilhar(produtosPedido[i]);
-    	}
     }
     
-    public static void listarProdutosPedidosRecentes() {
+    public static void extrairLotePedidos() {
     	
     	cabecalho();
     	
-    	if (pilhaProdutosRecentes.vazia()) {
-    		System.out.println("Ainda nao ha produtos associados a pedidos finalizados.");
+    	if (filaPedidos.vazia()) {
+    		System.out.println("Nao ha pedidos aguardando processamento.");
     		return;
     	}
     	
-    	int quantidade = lerOpcao("Quantos produtos recentes deseja visualizar?", Integer.class);
+    	Integer quantidade = lerOpcao("Quantos pedidos deseja extrair da fila?", Integer.class);
     	
-    	try {
-    		Pilha<Produto> produtosRecentes = pilhaProdutosRecentes.subPilha(quantidade);
-    		System.out.println("Produtos mais recentemente pedidos:");
-    		System.out.println(produtosRecentes);
-    	} catch (IllegalArgumentException excecao) {
-    		System.out.println(excecao.getMessage());
+    	if (quantidade == null || quantidade < 0) {
+    		System.out.println("Quantidade invalida.");
+    		return;
     	}
+    	
+    	Fila<Pedido> lote = filaPedidos.extrairLote(quantidade);
+    	System.out.println("Lote extraido da fila de pedidos:");
+    	System.out.println(lote);
+    	System.out.println("Pedidos restantes na fila: " + filaPedidos.tamanho());
     }
 
     public static void salvarPedidos() {
@@ -291,7 +285,7 @@ public class App {
                 	finalizarPedido(pedido);
                 	pedido = null;
                 }
-                case 6 -> listarProdutosPedidosRecentes();
+                case 6 -> extrairLotePedidos();
             }
             pausa();
         }while(opcao != 0);       

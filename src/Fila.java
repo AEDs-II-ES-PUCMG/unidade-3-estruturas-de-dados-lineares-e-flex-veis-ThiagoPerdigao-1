@@ -65,6 +65,32 @@ public class Fila<E> {
 		}
 	}
 
+	public int contarOcorrencias(E item) {
+		int ocorrencias = 0;
+		Celula<E> aux = frente.getProximo();
+		
+		while (aux != null) {
+			if ((item == null && aux.getItem() == null) || (item != null && item.equals(aux.getItem()))) {
+				ocorrencias++;
+			}
+			aux = aux.getProximo();
+		}
+		
+		return ocorrencias;
+	}
+
+	public Fila<E> extrairLote(int numItens) {
+		Fila<E> lote = new Fila<>();
+		int itensExtraidos = 0;
+		
+		while (!vazia() && itensExtraidos < numItens) {
+			lote.enfileirar(desenfileirar());
+			itensExtraidos++;
+		}
+		
+		return lote;
+	}
+
 	public int tamanho() {
 		return quantidade;
 	}
